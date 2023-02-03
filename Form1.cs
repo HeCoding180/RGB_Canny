@@ -10,6 +10,22 @@ namespace CannyEdgeDetection_Test
         {
             InitializeComponent();
 
+            float[,] gradientXMatrix = new float[3, 3]
+            {
+                { 1.0f, 0.0f, -1.0f },
+                { 2.0f, 0.0f, -2.0f },
+                { 1.0f, 0.0f, -1.0f }
+            };
+            float[,] gradientYMatrix = new float[3, 3]
+            {
+                { 1.0f, 2.0f, 1.0f },
+                { 0.0f, 0.0f, 0.0f },
+                { -1.0f, -2.0f, -1.0f }
+            };
+
+            ImageFilter gradientXFilter = new ImageFilter(gradientXMatrix);
+            ImageFilter gradientYFilter = new ImageFilter(gradientXMatrix);
+
             edgeDetector = new Canny(EdgeDetectionMode.Grayscale);
             edgeDetector.EdgeDetectThreshold = 128;
 
