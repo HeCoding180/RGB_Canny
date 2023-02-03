@@ -4,15 +4,62 @@ namespace CannyEdgeDetection_Test
     {
         Canny edgeDetector;
 
+        bool displayThresholdImage = false;
+
         public Form1()
         {
             InitializeComponent();
 
-            edgeDetector = new Canny(EdgeDetectionMode.RGB);
+            edgeDetector = new Canny(EdgeDetectionMode.Grayscale);
             edgeDetector.EdgeDetectThreshold = 128;
+
+            Bitmap testImage = new Bitmap(Image.FromFile(@"C:\Users\timow\source\repos\RGB_Canny\TestImage.png"));
+
+            refPictureBox.BackgroundImage = testImage;
+
+            edgeDetector.ReferenceImage = testImage;
+
+            Bitmap OutputImage = edgeDetector.GradientOutputImage;
+            if (OutputImage != null)
+            {
+                edgeDetectPictureBox.BackgroundImage = OutputImage;
+            }
         }
 
         private void bOpen_Click(object sender, EventArgs e)
+        {
+            OpenReferenceImage();
+        }
+
+        private void thresholdTrackbar_Scroll(object sender, EventArgs e)
+        {
+            edgeDetector.EdgeDetectThreshold = thresholdTrackbar.Value;
+
+            edgeDetectPictureBox.BackgroundImage = edgeDetector.EdgeOutputImage;
+        }
+
+        private void edgeDetectPictureBox_Click(object sender, EventArgs e)
+        {
+            displayThresholdImage = !displayThresholdImage;
+
+            if (displayThresholdImage)
+            {
+                edgeDetectPictureBox.BackgroundImage = edgeDetector.EdgeOutputImage;
+                thresholdTrackbar.Enabled = true;
+            }
+            else
+            {
+                edgeDetectPictureBox.BackgroundImage = edgeDetector.GradientOutputImage;
+                thresholdTrackbar.Enabled = false;
+            }
+        }
+
+        private void refPictureBox_Click(object sender, EventArgs e)
+        {
+            OpenReferenceImage();
+        }
+
+        void OpenReferenceImage()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "png files (*.png)|*.png|jpg files (*.jpg)|*.jpg|jpeg files (*.jpeg)|*.jpeg";
@@ -22,20 +69,25 @@ namespace CannyEdgeDetection_Test
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                Bitmap inputFile = (Bitmap)Image.FromFile(openFileDialog.FileName);
-                refPictureBox.BackgroundImage = inputFile;
-                Bitmap OutputImage = edgeDetector.GenerateEdgeDetectBitmap(inputFile);
-                if (OutputImage != null)
-                {
-                    edgeDetectPictureBox.BackgroundImage = OutputImage;
-                }
+                Bitmap inputImage = new Bitmap(Image.FromFile(openFileDialog.FileName));
+                edgeDetector.ReferenceImage = inputImage;
+
+                UpdateDisplayImage();
+
+                refPictureBox.BackgroundImage = inputImage;
             }
         }
 
-        private void thresholdTrackbar_Scroll(object sender, EventArgs e)
+        void UpdateDisplayImage()
         {
-            edgeDetector.EdgeDetectThreshold = thresholdTrackbar.Value;
-            edgeDetectPictureBox.Image = edgeDetector.GenerateEdgeDetectBitmap();
+            if(displayThresholdImage)
+            {
+                edgeDetectPictureBox.BackgroundImage = edgeDetector.EdgeOutputImage;
+            }
+            else
+            {
+                edgeDetectPictureBox.BackgroundImage = edgeDetector.GradientOutputImage;
+            }
         }
     }
 }

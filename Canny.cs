@@ -15,7 +15,6 @@ namespace CannyEdgeDetection_Test
     public class Canny
     {
         private Bitmap _refImage { set; get; }
-
         public Bitmap ReferenceImage
         {
             set
@@ -23,12 +22,25 @@ namespace CannyEdgeDetection_Test
                 _refImage = value;
                 imageWidth = value.Width;
                 imageHeight = value.Height;
+                GenerateEdgeDetectBitmap();
             }
             get
             {
                 return _refImage;
             }
         }
+
+        public Bitmap GradientOutputImage { private set; get; }
+        public int[,] ScaledGradientOutputArray { private set; get; }
+
+        public Bitmap EdgeOutputImage
+        {
+            get
+            {
+                return GetThresholdEdgeImage();
+            }
+        }
+
         public int EdgeDetectThreshold { set; get; }
         public EdgeDetectionMode mode { set; get; }
 
@@ -58,17 +70,37 @@ namespace CannyEdgeDetection_Test
             imageWidth = refImage.Width;
             imageHeight = refImage.Height;
         }
+        public Canny(Image refImage, EdgeDetectionMode mode)
+        {
+            this.mode = mode;
+
+            ReferenceImage = (Bitmap)refImage;
+
+            imageWidth = refImage.Width;
+            imageHeight = refImage.Height;
+        }
+        public Canny(Image refImage, int threshold, EdgeDetectionMode mode)
+        {
+            this.mode = mode;
+
+            ReferenceImage = (Bitmap)refImage;
+            EdgeDetectThreshold = threshold;
+
+            imageWidth = refImage.Width;
+            imageHeight = refImage.Height;
+        }
 
         private Color GetGrayscaleColor(int level)
         {
             return Color.FromArgb(level, level, level);
         }
 
-        public Bitmap? GenerateEdgeDetectBitmap()
+        private void GenerateEdgeDetectBitmap()
         {
             if (ReferenceImage != null)
             {
-                Bitmap outputImage = new Bitmap(imageWidth, imageHeight);
+                GradientOutputImage = new Bitmap(imageWidth, imageHeight);
+                ScaledGradientOutputArray = new int[imageWidth, imageHeight];
 
                 int[,] absolutePixelGradientOutput = new int[imageWidth, imageHeight];
 
@@ -94,33 +126,33 @@ namespace CannyEdgeDetection_Test
 
                                 if ((x == 0) || (x == (imageWidth - 1)))
                                 {
-                                    absolutePixelGradientX3[x, y, 0] = ReferenceImage.GetPixel(x, y).R;
-                                    absolutePixelGradientX3[x, y, 1] = ReferenceImage.GetPixel(x, y).G;
-                                    absolutePixelGradientX3[x, y, 2] = ReferenceImage.GetPixel(x, y).B;
+                                    absolutePixelGradientX3[x, y, 0] = _refImage.GetPixel(x, y).R;
+                                    absolutePixelGradientX3[x, y, 1] = _refImage.GetPixel(x, y).G;
+                                    absolutePixelGradientX3[x, y, 2] = _refImage.GetPixel(x, y).B;
                                 }
                                 else
                                 {
-                                    absolutePixelGradientX3[x, y, 0] += ReferenceImage.GetPixel(x + 1, y).R - absolutePixelGradientX3[x - 1, y, 0];
-                                    absolutePixelGradientX3[x, y, 1] += ReferenceImage.GetPixel(x + 1, y).G - absolutePixelGradientX3[x - 1, y, 1];
-                                    absolutePixelGradientX3[x, y, 2] += ReferenceImage.GetPixel(x + 1, y).B - absolutePixelGradientX3[x - 1, y, 2];
+                                    absolutePixelGradientX3[x, y, 0] += _refImage.GetPixel(x + 1, y).R - _refImage.GetPixel(x - 1, y).R;
+                                    absolutePixelGradientX3[x, y, 1] += _refImage.GetPixel(x + 1, y).G - _refImage.GetPixel(x - 1, y).G;
+                                    absolutePixelGradientX3[x, y, 2] += _refImage.GetPixel(x + 1, y).B - _refImage.GetPixel(x - 1, y).B;
                                 }
 
                                 if ((y == 0) || (y == (imageHeight - 1)))
                                 {
-                                    absolutePixelGradientY3[x, y, 0] = ReferenceImage.GetPixel(x, y).R;
-                                    absolutePixelGradientY3[x, y, 1] = ReferenceImage.GetPixel(x, y).G;
-                                    absolutePixelGradientY3[x, y, 2] = ReferenceImage.GetPixel(x, y).B;
+                                    absolutePixelGradientY3[x, y, 0] = _refImage.GetPixel(x, y).R;
+                                    absolutePixelGradientY3[x, y, 1] = _refImage.GetPixel(x, y).G;
+                                    absolutePixelGradientY3[x, y, 2] = _refImage.GetPixel(x, y).B;
                                 }
                                 else
                                 {
-                                    absolutePixelGradientY3[x, y, 0] += ReferenceImage.GetPixel(x, y + 1).R - absolutePixelGradientX3[x, y - 1, 0];
-                                    absolutePixelGradientY3[x, y, 1] += ReferenceImage.GetPixel(x, y + 1).G - absolutePixelGradientX3[x, y - 1, 1];
-                                    absolutePixelGradientY3[x, y, 2] += ReferenceImage.GetPixel(x, y + 1).B - absolutePixelGradientX3[x, y - 1, 2];
+                                    absolutePixelGradientY3[x, y, 0] += _refImage.GetPixel(x, y + 1).R - _refImage.GetPixel(x, y - 1).R;
+                                    absolutePixelGradientY3[x, y, 1] += _refImage.GetPixel(x, y + 1).G - _refImage.GetPixel(x, y - 1).G;
+                                    absolutePixelGradientY3[x, y, 2] += _refImage.GetPixel(x, y + 1).B - _refImage.GetPixel(x, y - 1).B;
                                 }
 
-                                absolutePixelGradientOutput[x, y] = absolutePixelGradientX3[x, y, 0] + absolutePixelGradientY3[x, y, 0]
-                                                                  + absolutePixelGradientX3[x, y, 1] + absolutePixelGradientY3[x, y, 1]
-                                                                  + absolutePixelGradientX3[x, y, 2] + absolutePixelGradientY3[x, y, 2];
+                                absolutePixelGradientOutput[x, y] = Math.Abs(absolutePixelGradientX3[x, y, 0] + absolutePixelGradientY3[x, y, 0])
+                                                                  + Math.Abs(absolutePixelGradientX3[x, y, 1] + absolutePixelGradientY3[x, y, 1])
+                                                                  + Math.Abs(absolutePixelGradientX3[x, y, 2] + absolutePixelGradientY3[x, y, 2]);
 
                                 if (absolutePixelGradientOutput[x, y] < minPixelValue)
                                 {
@@ -150,10 +182,14 @@ namespace CannyEdgeDetection_Test
                                 }
                                 else
                                 {
-                                    absolutePixelGradientX[x, y] += ReferenceImage.GetPixel(x + 1, y).R
-                                                                  + ReferenceImage.GetPixel(x + 1, y).G
-                                                                  + ReferenceImage.GetPixel(x + 1, y).B
-                                                                  - absolutePixelGradientY[x - 1, y];
+                                    absolutePixelGradientX[x, y] += _refImage.GetPixel(x + 1, y).R
+                                                                  + _refImage.GetPixel(x + 1, y).G
+                                                                  + _refImage.GetPixel(x + 1, y).B
+                                                                  - _refImage.GetPixel(x - 1, y).R
+                                                                  - _refImage.GetPixel(x - 1, y).G
+                                                                  - _refImage.GetPixel(x - 1, y).B;
+
+
                                 }
                                 if ((y == 0) || (y == (imageHeight - 1)))
                                 {
@@ -161,13 +197,15 @@ namespace CannyEdgeDetection_Test
                                 }
                                 else
                                 {
-                                    absolutePixelGradientY[x, y] += ReferenceImage.GetPixel(x, y + 1).R
-                                                                  + ReferenceImage.GetPixel(x, y + 1).G
-                                                                  + ReferenceImage.GetPixel(x, y + 1).B
-                                                                  - absolutePixelGradientY[x, y - 1];
+                                    absolutePixelGradientY[x, y] += _refImage.GetPixel(x, y + 1).R
+                                                                  + _refImage.GetPixel(x, y + 1).G
+                                                                  + _refImage.GetPixel(x, y + 1).B
+                                                                  - _refImage.GetPixel(x, y - 1).R
+                                                                  - _refImage.GetPixel(x, y - 1).G
+                                                                  - _refImage.GetPixel(x, y - 1).B;
                                 }
 
-                                absolutePixelGradientOutput[x, y] = absolutePixelGradientX[x, y] + absolutePixelGradientY[x, y];
+                                absolutePixelGradientOutput[x, y] = Math.Abs(absolutePixelGradientX[x, y] + absolutePixelGradientY[x, y]);
 
                                 if (absolutePixelGradientOutput[x, y] < minPixelValue)
                                 {
@@ -183,45 +221,36 @@ namespace CannyEdgeDetection_Test
                 }
 
                 int offset = -minPixelValue;
-                double scaleFactor = 255.0 / (maxPixelValue - minPixelValue);
-
-                int[,] outArr = new int[imageWidth, imageHeight];
+                double scaleFactor = 255.0 / (double)(maxPixelValue - minPixelValue);
 
                 for (int x = 0; x < imageWidth; x++)
                 {
                     for (int y = 0; y < imageHeight; y++)
                     {
-                        if ((int)Math.Round((absolutePixelGradientOutput[x, y] + offset) * scaleFactor) >= EdgeDetectThreshold)
-                            outputImage.SetPixel(x, y, GetGrayscaleColor(255));
-                        else
-                            outputImage.SetPixel(x, y, GetGrayscaleColor(0));
-                        //outputImage.SetPixel(x, y, GetGrayscaleColor((int)Math.Round((absolutePixelGradientOutput[x, y] + offset) * scaleFactor)));
-                        outArr[x, y] = (int)Math.Round((absolutePixelGradientOutput[x, y] + offset) * scaleFactor);
+                        int scaledValue = (int)Math.Round((absolutePixelGradientOutput[x, y] + offset) * scaleFactor);
+                        ScaledGradientOutputArray[x, y] = scaledValue;
+                        GradientOutputImage.SetPixel(x, y, GetGrayscaleColor(scaledValue));
                     }
                 }
-
-                return outputImage;
             }
-            else
+        }
+
+        private Bitmap? GetThresholdEdgeImage()
+        {
+            Bitmap outputImage = new Bitmap(imageWidth, imageHeight);
+
+            for (int x = 0; x < imageWidth; x++)
             {
-                return null;
+                for (int y = 0; y < imageHeight; y++)
+                {
+                    if (ScaledGradientOutputArray[x, y] >= EdgeDetectThreshold)
+                        outputImage.SetPixel(x, y, GetGrayscaleColor(255));
+                    else
+                        outputImage.SetPixel(x, y, GetGrayscaleColor(0));
+                }
             }
-        }
 
-        public Bitmap? GenerateEdgeDetectBitmap(Bitmap refImage)
-        {
-            ReferenceImage = refImage;
-
-            return GenerateEdgeDetectBitmap();
-        }
-
-        public Bitmap? GenerateEdgeDetectBitmap(Bitmap refImage, int threshold)
-        {
-            ReferenceImage = refImage;
-
-            EdgeDetectThreshold = threshold;
-
-            return GenerateEdgeDetectBitmap();
+            return outputImage;
         }
     }
 }
